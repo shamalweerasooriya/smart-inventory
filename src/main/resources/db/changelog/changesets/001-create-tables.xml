@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-01-create-tenants" author="smartinventory">
+        <createTable tableName="tenants">
+            <column name="id" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="001-02-create-warehouses" author="smartinventory">
+        <createTable tableName="warehouses">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="width" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="height" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entrance_x" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entrance_y" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="warehouses" baseColumnNames="tenant_id"
+                                 constraintName="fk_warehouses_tenant"
+                                 referencedTableName="tenants" referencedColumnNames="id"/>
+
+        <createIndex tableName="warehouses" indexName="idx_warehouses_tenant_id">
+            <column name="tenant_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="001-03-create-locations" author="smartinventory">
+        <createTable tableName="locations">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="warehouse_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="x" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="y" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="locations" baseColumnNames="warehouse_id"
+                                 constraintName="fk_locations_warehouse"
+                                 referencedTableName="warehouses" referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="locations" columnNames="warehouse_id, x, y"
+                             constraintName="uq_locations_warehouse_xy"/>
+
+        <createIndex tableName="locations" indexName="idx_locations_tenant_id">
+            <column name="tenant_id"/>
+        </createIndex>
+        <createIndex tableName="locations" indexName="idx_locations_warehouse_id">
+            <column name="warehouse_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="001-04-create-items" author="smartinventory">
+        <createTable tableName="items">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="warehouse_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location_id" type="uuid"/>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sku" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="items" baseColumnNames="warehouse_id"
+                                 constraintName="fk_items_warehouse"
+                                 referencedTableName="warehouses" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="items" baseColumnNames="location_id"
+                                 constraintName="fk_items_location"
+                                 referencedTableName="locations" referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="items" columnNames="tenant_id, sku"
+                             constraintName="uq_items_tenant_sku"/>
+
+        <createIndex tableName="items" indexName="idx_items_tenant_id">
+            <column name="tenant_id"/>
+        </createIndex>
+        <createIndex tableName="items" indexName="idx_items_warehouse_id">
+            <column name="warehouse_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="001-05-create-movements" author="smartinventory">
+        <createTable tableName="movements">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="from_location_id" type="uuid"/>
+            <column name="to_location_id" type="uuid"/>
+            <column name="quantity" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="movements" baseColumnNames="item_id"
+                                 constraintName="fk_movements_item"
+                                 referencedTableName="items" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="movements" baseColumnNames="from_location_id"
+                                 constraintName="fk_movements_from_location"
+                                 referencedTableName="locations" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="movements" baseColumnNames="to_location_id"
+                                 constraintName="fk_movements_to_location"
+                                 referencedTableName="locations" referencedColumnNames="id"/>
+
+        <createIndex tableName="movements" indexName="idx_movements_tenant_id">
+            <column name="tenant_id"/>
+        </createIndex>
+        <createIndex tableName="movements" indexName="idx_movements_item_id">
+            <column name="item_id"/>
+        </createIndex>
+        <createIndex tableName="movements" indexName="idx_movements_timestamp">
+            <column name="timestamp"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="001-06-seed-demo-tenant" author="smartinventory" context="dev">
+        <insert tableName="tenants">
+            <column name="id" value="demo-tenant-001"/>
+            <column name="name" value="Demo Organization"/>
+            <column name="created_at" valueComputed="now()"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
